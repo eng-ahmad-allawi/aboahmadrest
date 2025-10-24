@@ -1,0 +1,5 @@
+{
+  "name": "Abu Ahmad Restaurant Timesheet",
+  "description": "A web application for tracking the weekly work hours of employees at Abu Ahmad's Restaurant. All data is stored locally in the browser, and the app is designed to be a fully responsive Progressive Web App (PWA).",
+  "requestFramePermissions": []
+}
