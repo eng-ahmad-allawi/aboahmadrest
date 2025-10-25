@@ -80,8 +80,10 @@ export const useAuth = () => {
       const userEmail = authUser.email || '';
       const mappedUsername = userEmail.endsWith('@example.com') ? userEmail.replace('@example.com', '') : (userEmail === 'aboahmad@example.com' ? ADMIN_USERNAME : '');
       console.log('Mapped username:', mappedUsername);
+      console.log('ADMIN_USERNAME:', ADMIN_USERNAME);
       const employee = EMPLOYEES.find(e => e.username === mappedUsername);
       console.log('Found employee:', employee);
+      console.log('Is admin?', mappedUsername === ADMIN_USERNAME);
       if (mappedUsername === ADMIN_USERNAME || employee) {
         const userData: User = {
           username: mappedUsername,
