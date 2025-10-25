@@ -78,7 +78,7 @@ export const useAuth = () => {
       // Manually set user after successful login
       const authUser = data.user;
       const userEmail = authUser.email || '';
-      const mappedUsername = userEmail.endsWith('@example.com') ? userEmail.replace('@example.com', '') : (userEmail === 'aboahmad@example.com' ? ADMIN_USERNAME : '');
+      const mappedUsername = userEmail === 'aboahmad@example.com' ? ADMIN_USERNAME : (userEmail.endsWith('@example.com') ? userEmail.replace('@example.com', '') : userEmail);
       console.log('Mapped username:', mappedUsername);
       console.log('ADMIN_USERNAME:', ADMIN_USERNAME);
       const employee = EMPLOYEES.find(e => e.username === mappedUsername);
