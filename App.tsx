@@ -8,11 +8,22 @@ import Header from './components/Header';
 import { ADMIN_USERNAME } from './constants';
 
 const App: React.FC = () => {
-  const { user, login, logout } = useAuth();
+  const { user, login, logout, loading, error } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="bg-white min-h-screen text-black flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-orange-500"></div>
+          <p className="mt-4 text-lg text-gray-600">جاري التحميل...</p>
+        </div>
+      </div>
+    );
+  }
 
   const renderContent = () => {
     if (!user) {
-      return <LoginPage onLogin={login} />;
+      return <LoginPage onLogin={login} error={error} />;
     }
     if (user.username === ADMIN_USERNAME) {
       return <AdminDashboard />;

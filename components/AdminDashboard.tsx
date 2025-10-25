@@ -8,29 +8,13 @@ import ConfirmModal from './ConfirmModal';
 
 const AdminDashboard: React.FC = () => {
   const { loadAllWorkData, clearAllWorkData } = useWorkData();
-  const [allData, setAllData] = useState<{ [username: string]: WorkWeek }>({});
   const [selectedEmployee, setSelectedEmployee] = useState<User | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const fetchData = useCallback(() => {
-    setAllData(loadAllWorkData());
-  }, [loadAllWorkData]);
+  const allData = loadAllWorkData();
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  // Refetch data when an employee is selected to ensure freshness
-  useEffect(() => {
-    if (selectedEmployee) {
-      fetchData();
-    }
-  }, [selectedEmployee, fetchData]);
-
-
-  const handleClearData = () => {
-    clearAllWorkData();
-    fetchData();
+  const handleClearData = async () => {
+    await clearAllWorkData();
     setSelectedEmployee(null);
     setIsModalOpen(false);
   };

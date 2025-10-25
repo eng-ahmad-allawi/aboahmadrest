@@ -2,47 +2,98 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { User } from '../types';
 import { EMPLOYEES, ADMIN_USERNAME, ADMIN_PASSWORD } from '../constants';
-
-const SESSION_KEY = 'abuAhmadSession';
+import { supabase } from '../services/supabaseClient';
 
 export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    try {
-      const storedSession = localStorage.getItem(SESSION_KEY);
-      if (storedSession) {
-        setUser(JSON.parse(storedSession));
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        const authUser = session.user;
+        // Map email to username (remove @example.com)
+        const email = authUser.email || '';
+        const username = email.endsWith('@example.com') ? email.replace('@example.com', '') : (email === 'aboahmad@example.com' ? ADMIN_USERNAME : '');
+        const employee = EMPLOYEES.find(e => e.username === username);
+        if (username === ADMIN_USERNAME || employee) {
+          const userData: User = {
+            username,
+            nameAr: username === ADMIN_USERNAME ? 'المسؤول' : (employee?.nameAr || ''),
+            role: username === ADMIN_USERNAME ? 'admin' : 'employee'
+          };
+          setUser(userData);
+        }
       }
+      setLoading(false);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        const authUser = session.user;
+        const email = authUser.email || '';
+        const username = email.endsWith('@example.com') ? email.replace('@example.com', '') : (email === 'aboahmad@example.com' ? ADMIN_USERNAME : '');
+        const employee = EMPLOYEES.find(e => e.username === username);
+        if (username === ADMIN_USERNAME || employee) {
+          const userData: User = {
+            username,
+            nameAr: username === ADMIN_USERNAME ? 'المسؤول' : (employee?.nameAr || ''),
+            role: username === ADMIN_USERNAME ? 'admin' : 'employee'
+          };
+          setUser(userData);
+        }
+      } else {
+        setUser(null);
+      }
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const login = useCallback(async (username: string, password: string): Promise<boolean> => {
+    try {
+      setError(null);
+      // Map username to email, handle if username is already an email
+      const email = username.includes('@') ? username : (username === ADMIN_USERNAME ? 'aboahmad@example.com' : `${username}@example.com`);
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        setError('اسم المستخدم أو كلمة المرور غير صحيحة.');
+        return false;
+      }
+
+      // Manually set user after successful login
+      const authUser = data.user;
+      const userEmail = authUser.email || '';
+      const username = userEmail.endsWith('@example.com') ? userEmail.replace('@example.com', '') : (userEmail === 'aboahmad@example.com' ? ADMIN_USERNAME : '');
+      const employee = EMPLOYEES.find(e => e.username === username);
+      if (username === ADMIN_USERNAME || employee) {
+        const userData: User = {
+          username,
+          nameAr: username === ADMIN_USERNAME ? 'المسؤول' : (employee?.nameAr || ''),
+          role: username === ADMIN_USERNAME ? 'admin' : 'employee'
+        };
+        setUser(userData);
+      }
+
+      return true;
     } catch (error) {
-      console.error("Failed to parse session from localStorage", error);
-      localStorage.removeItem(SESSION_KEY);
+      setError('حدث خطأ في تسجيل الدخول.');
+      return false;
     }
   }, []);
 
-  const login = useCallback((username: string, password: string): boolean => {
-    if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
-      const adminUser: User = { username: ADMIN_USERNAME, nameAr: 'المسؤول', role: 'admin' };
-      localStorage.setItem(SESSION_KEY, JSON.stringify(adminUser));
-      setUser(adminUser);
-      return true;
-    }
-
-    const employee = EMPLOYEES.find(e => e.username === username && e.password === password);
-    if (employee) {
-      const employeeUser: User = { username: employee.username, nameAr: employee.nameAr, role: 'employee' };
-      localStorage.setItem(SESSION_KEY, JSON.stringify(employeeUser));
-      setUser(employeeUser);
-      return true;
-    }
-
-    return false;
-  }, []);
-
-  const logout = useCallback(() => {
-    localStorage.removeItem(SESSION_KEY);
+  const logout = useCallback(async () => {
+    await supabase.auth.signOut();
     setUser(null);
   }, []);
 
-  return { user, login, logout };
+  return { user, login, logout, loading, error };
 };

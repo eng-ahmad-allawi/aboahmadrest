@@ -38,7 +38,7 @@ const getDefaultWorkWeek = (): WorkWeek => {
 
 
 const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ user }) => {
-  const { loadWorkData, saveWorkData } = useWorkData();
+  const { loadWorkData, saveWorkData, loadAllWorkData } = useWorkData();
   const [workWeek, setWorkWeek] = useState<WorkWeek>(getDefaultWorkWeek());
   const [errors, setErrors] = useState<Record<string, boolean>>({});
   const [totalDays, setTotalDays] = useState(0);
@@ -46,11 +46,11 @@ const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ user }) => {
 
   useEffect(() => {
     const data = loadWorkData(user.username);
-    const initialData = data || getDefaultWorkWeek();
-    setWorkWeek(initialData);
-    setTotalDays(calculateTotalDays(initialData));
-    setTotalHours(calculateTotalHours(initialData));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (data) {
+      setWorkWeek(data);
+      setTotalDays(calculateTotalDays(data));
+      setTotalHours(calculateTotalHours(data));
+    }
   }, [user.username, loadWorkData]);
 
   const handleDataChange = useCallback((newWorkWeek: WorkWeek) => {
@@ -70,7 +70,9 @@ const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ user }) => {
     setTotalHours(calculateTotalHours(newWorkWeek));
 
     if (!hasAnyError) {
-      saveWorkData(user.username, newWorkWeek);
+      saveWorkData(user.username, newWorkWeek).catch((error) => {
+        console.error('Failed to save work data', error);
+      });
     }
   }, [user.username, saveWorkData]);
 

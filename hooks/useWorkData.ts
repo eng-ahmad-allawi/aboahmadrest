@@ -1,7 +1,7 @@
 
-import { useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { WorkWeek } from '../types';
-import { EMPLOYEES } from '../constants';
+import { supabase } from '../services/supabaseClient';
 
 const getWeekId = (): string => {
   const now = new Date();
@@ -11,56 +11,103 @@ const getWeekId = (): string => {
   return `${lastSaturday.getFullYear()}-${lastSaturday.getMonth() + 1}-${lastSaturday.getDate()}`;
 };
 
-const getStorageKey = (): string => `abuAhmadWorkData_${getWeekId()}`;
-
 export const useWorkData = () => {
-  
-  const loadWorkData = useCallback((username: string): WorkWeek | null => {
-    try {
-      const key = getStorageKey();
-      const allData = localStorage.getItem(key);
-      if (allData) {
-        const parsedData = JSON.parse(allData);
-        return parsedData[username] || null;
-      }
-      return null;
-    } catch (error) {
-      console.error("Failed to load work data", error);
-      return null;
-    }
-  }, []);
-  
-  const saveWorkData = useCallback((username: string, data: WorkWeek) => {
-    try {
-      const key = getStorageKey();
-      const allDataStr = localStorage.getItem(key) || '{}';
-      const allData = JSON.parse(allDataStr);
-      allData[username] = data;
-      localStorage.setItem(key, JSON.stringify(allData));
-    } catch (error) {
-      console.error("Failed to save work data", error);
-    }
-  }, []);
-  
-  const loadAllWorkData = useCallback((): { [username: string]: WorkWeek } => {
-    try {
-      const key = getStorageKey();
-      const allData = localStorage.getItem(key);
-      return allData ? JSON.parse(allData) : {};
-    } catch (error) {
-      console.error("Failed to load all work data", error);
-      return {};
-    }
-  }, []);
+  const [allData, setAllData] = useState<{ [username: string]: WorkWeek }>({});
 
-  const clearAllWorkData = useCallback(() => {
+  const weekId = getWeekId();
+
+  useEffect(() => {
+    // Load initial data
+    loadAllWorkDataInternal();
+
+    // Subscribe to real-time changes
+    const subscription = supabase
+      .channel('work_data_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'work_data',
+          filter: `week_id=eq.${weekId}`,
+        },
+        () => {
+          loadAllWorkDataInternal();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [weekId]);
+
+  const loadAllWorkDataInternal = useCallback(async () => {
     try {
-      const key = getStorageKey();
-      localStorage.removeItem(key);
+      const { data, error } = await supabase
+        .from('work_data')
+        .select('*')
+        .eq('week_id', weekId);
+
+      if (error) {
+        console.error('Failed to load all work data', error);
+        return;
+      }
+
+      const formattedData: { [username: string]: WorkWeek } = {};
+      data?.forEach((item) => {
+        formattedData[item.username] = item.work_week;
+      });
+      setAllData(formattedData);
     } catch (error) {
-      console.error("Failed to clear work data", error);
+      console.error('Failed to load all work data', error);
     }
-  }, []);
+  }, [weekId]);
+
+  const loadWorkData = useCallback((username: string): WorkWeek | null => {
+    return allData[username] || null;
+  }, [allData]);
+
+  const saveWorkData = useCallback(async (username: string, data: WorkWeek) => {
+    try {
+      const { error } = await supabase
+        .from('work_data')
+        .upsert(
+          {
+            username,
+            week_id: weekId,
+            work_week: data,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'username,week_id' }
+        );
+
+      if (error) {
+        console.error('Failed to save work data', error);
+      }
+    } catch (error) {
+      console.error('Failed to save work data', error);
+    }
+  }, [weekId]);
+
+  const loadAllWorkData = useCallback((): { [username: string]: WorkWeek } => {
+    return allData;
+  }, [allData]);
+
+  const clearAllWorkData = useCallback(async () => {
+    try {
+      const { error } = await supabase
+        .from('work_data')
+        .delete()
+        .eq('week_id', weekId);
+
+      if (error) {
+        console.error('Failed to clear work data', error);
+      }
+    } catch (error) {
+      console.error('Failed to clear work data', error);
+    }
+  }, [weekId]);
 
   return { loadWorkData, saveWorkData, loadAllWorkData, clearAllWorkData };
 };
