@@ -65,6 +65,8 @@ export const useAuth = () => {
         password,
       });
 
+      console.log('Supabase response:', { data, error });
+
       if (error) {
         console.log('Login error:', error.message);
         setError('اسم المستخدم أو كلمة المرور غير صحيحة.');
