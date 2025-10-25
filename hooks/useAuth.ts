@@ -55,17 +55,19 @@ export const useAuth = () => {
   }, []);
 
   const login = useCallback(async (username: string, password: string): Promise<boolean> => {
+    console.log('Login function called with username:', username, 'password:', password);
     try {
       setError(null);
       // Map username to email, handle if username is already an email
       const email = username.includes('@') ? username : (username === ADMIN_USERNAME ? 'aboahmad@example.com' : `${username}@example.com`);
-      console.log('Login attempt with email:', email, 'password:', password);
+      console.log('Mapped to email:', email);
+      console.log('Calling supabase.auth.signInWithPassword...');
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      console.log('Supabase response:', { data, error });
+      console.log('Supabase response received:', { data, error });
 
       if (error) {
         console.log('Login error:', error.message);
