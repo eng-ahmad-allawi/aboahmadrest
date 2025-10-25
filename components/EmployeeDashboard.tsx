@@ -46,10 +46,16 @@ const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ user }) => {
 
   useEffect(() => {
     const data = loadWorkData(user.username);
+    console.log('Loaded work data for user:', user.username, 'data:', data);
     if (data) {
       setWorkWeek(data);
       setTotalDays(calculateTotalDays(data));
       setTotalHours(calculateTotalHours(data));
+    } else {
+      // Reset to default if no data
+      setWorkWeek(getDefaultWorkWeek());
+      setTotalDays(0);
+      setTotalHours(0);
     }
   }, [user.username, loadWorkData]);
 

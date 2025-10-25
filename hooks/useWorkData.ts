@@ -70,6 +70,7 @@ export const useWorkData = () => {
 
   const saveWorkData = useCallback(async (username: string, data: WorkWeek) => {
     try {
+      console.log('Saving work data for user:', username, 'data:', data);
       const { error } = await supabase
         .from('work_data')
         .upsert(
@@ -84,11 +85,15 @@ export const useWorkData = () => {
 
       if (error) {
         console.error('Failed to save work data', error);
+      } else {
+        console.log('Work data saved successfully');
+        // Reload data after save
+        loadAllWorkDataInternal();
       }
     } catch (error) {
       console.error('Failed to save work data', error);
     }
-  }, [weekId]);
+  }, [weekId, loadAllWorkDataInternal]);
 
   const loadAllWorkData = useCallback((): { [username: string]: WorkWeek } => {
     return allData;

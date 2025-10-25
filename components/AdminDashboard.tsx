@@ -12,6 +12,7 @@ const AdminDashboard: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const allData = loadAllWorkData();
+  console.log('All work data in admin dashboard:', allData);
 
   const handleClearData = async () => {
     await clearAllWorkData();
