@@ -79,14 +79,21 @@ export const useAuth = () => {
       const authUser = data.user;
       const userEmail = authUser.email || '';
       const mappedUsername = userEmail.endsWith('@example.com') ? userEmail.replace('@example.com', '') : (userEmail === 'aboahmad@example.com' ? ADMIN_USERNAME : '');
+      console.log('Mapped username:', mappedUsername);
       const employee = EMPLOYEES.find(e => e.username === mappedUsername);
+      console.log('Found employee:', employee);
       if (mappedUsername === ADMIN_USERNAME || employee) {
         const userData: User = {
           username: mappedUsername,
           nameAr: mappedUsername === ADMIN_USERNAME ? 'المسؤول' : (employee?.nameAr || ''),
           role: mappedUsername === ADMIN_USERNAME ? 'admin' : 'employee'
         };
+        console.log('Setting user data:', userData);
         setUser(userData);
+      } else {
+        console.log('User not found in EMPLOYEES or not admin');
+        setError('المستخدم غير مصرح له بالدخول.');
+        return false;
       }
 
       return true;
