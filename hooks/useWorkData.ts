@@ -71,17 +71,43 @@ export const useWorkData = () => {
   const saveWorkData = useCallback(async (username: string, data: WorkWeek) => {
     try {
       console.log('Saving work data for user:', username, 'data:', data);
-      const { error } = await supabase
+      // First try to update existing record
+      const { data: existingData, error: selectError } = await supabase
         .from('work_data')
-        .upsert(
-          {
+        .select('*')
+        .eq('username', username)
+        .eq('week_id', weekId)
+        .single();
+
+      if (selectError && selectError.code !== 'PGRST116') { // PGRST116 is "not found"
+        console.error('Failed to check existing data', selectError);
+        return;
+      }
+
+      let error;
+      if (existingData) {
+        // Update existing record
+        const { error: updateError } = await supabase
+          .from('work_data')
+          .update({
+            work_week: data,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('username', username)
+          .eq('week_id', weekId);
+        error = updateError;
+      } else {
+        // Insert new record
+        const { error: insertError } = await supabase
+          .from('work_data')
+          .insert({
             username,
             week_id: weekId,
             work_week: data,
             updated_at: new Date().toISOString(),
-          },
-          { onConflict: 'username,week_id' }
-        );
+          });
+        error = insertError;
+      }
 
       if (error) {
         console.error('Failed to save work data', error);
