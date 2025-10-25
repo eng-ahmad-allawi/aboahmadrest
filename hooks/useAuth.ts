@@ -78,13 +78,13 @@ export const useAuth = () => {
       // Manually set user after successful login
       const authUser = data.user;
       const userEmail = authUser.email || '';
-      const username = userEmail.endsWith('@example.com') ? userEmail.replace('@example.com', '') : (userEmail === 'aboahmad@example.com' ? ADMIN_USERNAME : '');
-      const employee = EMPLOYEES.find(e => e.username === username);
-      if (username === ADMIN_USERNAME || employee) {
+      const mappedUsername = userEmail.endsWith('@example.com') ? userEmail.replace('@example.com', '') : (userEmail === 'aboahmad@example.com' ? ADMIN_USERNAME : '');
+      const employee = EMPLOYEES.find(e => e.username === mappedUsername);
+      if (mappedUsername === ADMIN_USERNAME || employee) {
         const userData: User = {
-          username,
-          nameAr: username === ADMIN_USERNAME ? 'المسؤول' : (employee?.nameAr || ''),
-          role: username === ADMIN_USERNAME ? 'admin' : 'employee'
+          username: mappedUsername,
+          nameAr: mappedUsername === ADMIN_USERNAME ? 'المسؤول' : (employee?.nameAr || ''),
+          role: mappedUsername === ADMIN_USERNAME ? 'admin' : 'employee'
         };
         setUser(userData);
       }
