@@ -59,12 +59,14 @@ export const useAuth = () => {
       setError(null);
       // Map username to email, handle if username is already an email
       const email = username.includes('@') ? username : (username === ADMIN_USERNAME ? 'aboahmad@example.com' : `${username}@example.com`);
+      console.log('Login attempt with email:', email, 'password:', password);
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) {
+        console.log('Login error:', error.message);
         setError('اسم المستخدم أو كلمة المرور غير صحيحة.');
         return false;
       }
@@ -85,6 +87,7 @@ export const useAuth = () => {
 
       return true;
     } catch (error) {
+      console.log('Login exception:', error.message);
       setError('حدث خطأ في تسجيل الدخول.');
       return false;
     }
